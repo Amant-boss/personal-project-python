@@ -28,3 +28,25 @@ def append_player_record(player_data: dict):
         new_row.to_csv(CSV_PATH, index=False)
     else:
         new_row.to_csv(CSV_PATH, mode='a', header=False, index=False)
+
+def update_player_record(old_first: str, old_last: str, updated_data: dict):
+    ensure_db()
+    df = read_data()
+    match_mask = (df["first_name"].str.lower() == old_first.lower()) & (df["last_name"].str.lower() == old_last.lower())
+    if not df[match_mask].empty:
+        idx = df[match_mask].index[0]
+        for col, val in updated_data.items():
+            df.at[idx, col] = val
+        df.to_csv(CSV_PATH, index=False)
+        return True
+    return False
+
+def delete_player_record(first_name: str, last_name: str):
+    ensure_db()
+    df = read_data()
+    initial_len = len(df)
+    df = df[~((df["first_name"].str.lower() == first_name.lower()) & (df["last_name"].str.lower() == last_name.lower()))]
+    if len(df) < initial_len:
+        df.to_csv(CSV_PATH, index=False)
+        return True
+    return False

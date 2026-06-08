@@ -1,6 +1,6 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from schemas import PlayerCreateSchema, ComparisonRequestSchema
-from database import read_data, save_new_csv, append_player_record
+from database import read_data, save_new_csv, append_player_record, update_player_record, delete_player_record
 import pandas as pd
 import numpy as np
 
@@ -16,6 +16,22 @@ def get_all_players():
 @app.post("/player/add")
 def add_player(player: PlayerCreateSchema):
     append_player_record(player.model_dump())
+    return {"status": "success"}
+
+
+@app.put("/player/update")
+def update_player(old_first: str, old_last: str, player: PlayerCreateSchema):
+    success = update_player_record(old_first, old_last, player.model_dump())
+    if not success:
+        raise HTTPException(status_code=404, detail="Original player record not found")
+    return {"status": "success"}
+
+
+@app.delete("/player/delete")
+def delete_player(first_name: str, last_name: str):
+    success = delete_player_record(first_name, last_name)
+    if not success:
+        raise HTTPException(status_code=404, detail="Player record not found")
     return {"status": "success"}
 
 

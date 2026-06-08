@@ -9,12 +9,16 @@ st.set_page_config(page_title="Sports Stats Analyzer", page_icon="🏆", layout=
 st.title("🏆 Sports Statistics Analyzer")
 st.caption("Analyzing historical rosters, logging live matches, and forecasting performance trends.")
 
-tab_data, tab_stats, tab_compare, tab_predict = st.tabs([
+tab_data, tab_stats, tab_compare, tab_predict, tab_raw_analytics = st.tabs([
     "📁 Data Management",
     "📊 Advanced Statistics",
     "⚔️ Compare Players",
-    "📈 Performance Trends"
+    "📈 Performance Trends",
+    "📊 Raw Analytics"
 ])
+
+player_list = []
+df_existing = pd.DataFrame()
 
 with tab_data:
     st.header("Current Roster & Database Status")
@@ -83,7 +87,79 @@ with tab_data:
 
     with col_csv:
         st.subheader("Advanced Settings")
-        with st.expander("Overwrite Current Database with a new CSV"):
+
+        with st.expander("✏️ Edit & Modify Existing Records"):
+            if player_list:
+                options = [f"{p['first_name']} {p['last_name']}" for p in player_list]
+                selected_player_name = st.selectbox("Select Player to Edit", options, key="edit_select")
+
+                selected_idx = options.index(selected_player_name)
+                p_current = player_list[selected_idx]
+
+                with st.form("edit_entry_form"):
+                    edit_f = st.text_input("First Name", value=p_current["first_name"])
+                    edit_l = st.text_input("Last Name", value=p_current["last_name"])
+                    edit_team = st.text_input("Team", value=p_current["team"])
+                    edit_nat = st.text_input("Nationality", value=p_current.get("nationality", ""))
+                    edit_pos = st.selectbox("Position", ["Forward", "Midfielder", "Defender"],
+                                            index=["Forward", "Midfielder", "Defender"].index(p_current["position"]) if
+                                            p_current["position"] in ["Forward", "Midfielder", "Defender"] else 0)
+
+                    em1, em2, em3 = st.columns(3)
+                    with em1:
+                        edit_matches = st.number_input("Matches Played", min_value=0, step=1,
+                                                       value=int(p_current["matches_played"]))
+                    with em2:
+                        edit_goals = st.number_input("Goals", min_value=0, step=1, value=int(p_current["goals"]))
+                    with em3:
+                        edit_assists = st.number_input("Assists", min_value=0, step=1, value=int(p_current["assists"]))
+
+                    edit_minutes = st.number_input("Minutes Played", min_value=0, step=1,
+                                                   value=int(p_current["minutes_played"]))
+
+                    submit_edit = st.form_submit_button("Save Changes to Database")
+                    if submit_edit:
+                        edit_payload = {
+                            "first_name": edit_f,
+                            "last_name": edit_l,
+                            "team": edit_team,
+                            "nationality": edit_nat,
+                            "position": edit_pos,
+                            "matches_played": int(edit_matches),
+                            "goals": int(edit_goals),
+                            "assists": int(edit_assists),
+                            "minutes_played": int(edit_minutes)
+                        }
+                        params = {"old_first": p_current["first_name"], "old_last": p_current["last_name"]}
+                        res = requests.put(f"{BACKEND_URL}/player/update", params=params, json=edit_payload)
+                        if res.status_code == 200:
+                            st.success(f"Successfully updated record for {edit_f} {edit_l}!")
+                            st.rerun()
+                        else:
+                            st.error(f"Error updating record: {res.text}")
+            else:
+                st.info("No data available to edit.")
+
+        with st.expander("🗑️ Delete Player Record"):
+            if player_list:
+                del_options = [f"{p['first_name']} {p['last_name']}" for p in player_list]
+                target_del = st.selectbox("Select Player to Permanently Delete", del_options, key="del_select")
+
+                if st.button("⚠️ Confirm Delete", key="delete_confirm_btn", type="primary"):
+                    del_idx = del_options.index(target_del)
+                    p_to_del = player_list[del_idx]
+
+                    del_params = {"first_name": p_to_del["first_name"], "last_name": p_to_del["last_name"]}
+                    res = requests.delete(f"{BACKEND_URL}/player/delete", params=del_params)
+                    if res.status_code == 200:
+                        st.success(f"Successfully deleted {target_del} from database!")
+                        st.rerun()
+                    else:
+                        st.error(f"Failed to delete record: {res.text}")
+            else:
+                st.info("No database elements to delete.")
+
+        with st.expander("📁 Overwrite Current Database with a new CSV"):
             uploaded_file = st.file_uploader("Upload replacement sports_data.csv", type=["csv"])
             if uploaded_file is not None:
                 if st.button("Danger: Overwrite Existing Data", key="upload_csv_btn"):
@@ -162,3 +238,53 @@ with tab_predict:
                     st.error("Could not compute trend line for this player.")
             except requests.exceptions.ConnectionError:
                 st.error("Backend unreachable.")
+
+with tab_raw_analytics:
+    st.header("📊 Aggregated Roster Analytics")
+    st.caption("No manual search criteria required. Real-time distributions derived from your active database records.")
+
+    if not df_existing.empty:
+        df_existing["full_name"] = df_existing["first_name"] + " " + df_existing["last_name"]
+
+        c1, c2 = st.columns(2)
+
+        with c1:
+            st.subheader("⚽ Goal Share Contribution")
+            fig_pie = px.pie(
+                df_existing,
+                names="full_name",
+                values="goals",
+                title="Proportional Goal Contributions Across Whole Squad",
+                hole=0.3
+            )
+            st.plotly_chart(fig_pie, use_container_width=True)
+
+        with c2:
+            st.subheader("🏃 Production Breakdown")
+            df_sorted = df_existing.sort_values(by="goals", ascending=False)
+            fig_bar = px.bar(
+                df_sorted,
+                x="full_name",
+                y=["goals", "assists"],
+                barmode="group",
+                title="Goal vs Assist Performance Rank (Highest Goals First)",
+                labels={"value": "Count", "full_name": "Player Name"}
+            )
+            st.plotly_chart(fig_bar, use_container_width=True)
+
+        st.write("---")
+
+        st.subheader("📈 Efficiency Metrics: Playtime vs. Output Volume")
+        fig_scatter = px.scatter(
+            df_existing,
+            x="minutes_played",
+            y="goals",
+            color="position",
+            size="matches_played",
+            hover_name="full_name",
+            title="Minutes Logged vs Goals Converted (Bubble Size = Matches Played)",
+            labels={"minutes_played": "Total Minutes Logged", "goals": "Goals Scored"}
+        )
+        st.plotly_chart(fig_scatter, use_container_width=True)
+    else:
+        st.info("Add records or check backend server data inside 'data/sports_data.csv' to visualize database metrics.")
