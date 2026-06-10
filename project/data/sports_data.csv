@@ -1,7 +1,7 @@
 first_name,last_name,team,nationality,position,matches_played,goals,assists,minutes_played
 Amir,Smith,Paris Capitals,Germany,Forward,19,13,11,1463
 Erling,Morina,Prishtina FC,Kosovo,Forward,21,17,11,1575
-Luka,Rossi,Drita FC,Germany,Midfielder,33,7,20,2475
+Luka,Modric,Drita FC,Germany,Midfielder,34,7,20,2487
 Lucas,Morina,Milan Stars,France,Forward,21,20,4,1617
 Arben,Berisha,Milan Stars,Italy,Defender,23,0,6,2047
 Luka,Berisha,Drita FC,England,Defender,24,4,3,1944
@@ -9,7 +9,6 @@ Oliver,Garcia,Munich Giants,France,Forward,22,13,9,1826
 Bekim,Fernandez,Madrid Galaxy,Italy,Midfielder,21,7,19,1617
 Kylian,Dubois,Munich Giants,Spain,Midfielder,27,7,18,2214
 Luca,Garcia,Munich Giants,Kosovo,Midfielder,27,7,9,2187
-Erling,Jones,Munich Giants,Norway,Midfielder,27,10,10,2241
 Milot,Silva,Paris Capitals,Croatia,Midfielder,33,9,13,2706
 Milot,De Bruyne,Llapi FC,England,Forward,18,14,5,1584
 Kylian,Krasniqi,Drita FC,Brazil,Defender,29,4,3,2175
@@ -20,7 +19,7 @@ Liam,Berisha,Milan Stars,France,Forward,16,17,12,1232
 Oliver,Kane,London Blues,Belgium,Forward,19,25,11,1520
 Thomas,De Bruyne,Drita FC,Germany,Defender,21,2,4,1806
 Bekim,De Bruyne,Llapi FC,England,Forward,22,12,8,1650
-Erling,Modric,Munich Giants,Croatia,Forward,15,12,3,1230
+Erling,Halland,Munich Giants,Croatia,Forward,16,13,6,1231
 Oliver,Garcia,Milan Stars,England,Defender,22,2,6,1980
 Mateo,Modric,Madrid Galaxy,Croatia,Defender,30,1,4,2640
 Mateo,Berisha,London Blues,Norway,Midfielder,26,9,14,2314
@@ -29,4 +28,5 @@ Mateo,Modric,Llapi FC,Spain,Midfielder,20,7,15,1640
 Oliver,Zeqiri,London Blues,Kosovo,Defender,32,0,1,2624
 Lucas,Morina,Llapi FC,Albania,Forward,27,11,5,2349
 Liam,Alves,Paris Capitals,Albania,Midfielder,28,11,18,2520
-Amant,Zabeli,Lugina,Kosova,Forward,82,198,76,1500
+Don,Haxhibeqiri,Ramiz Sadik,Croatia,Defender,13,5,15,2349
+Amant,Zabeli,Lugina,Kosovo,Forward,13,23,13,9872

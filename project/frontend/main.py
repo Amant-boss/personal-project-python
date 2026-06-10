@@ -28,12 +28,12 @@ with tab_data:
             player_list = response.json()
             if player_list:
                 df_existing = pd.DataFrame(player_list)
-                st.success(f"✅ Connected to Database: {len(df_existing)} players loaded from 'data/sports_data.csv'")
+                st.success(f"✅ Connected to Database: {len(df_existing)} players loaded from database.")
                 st.dataframe(df_existing, use_container_width=True, hide_index=True)
             else:
                 st.info("The database file exists but it is currently empty.")
         else:
-            st.warning("⚠️ No existing sports_data.csv found in the backend 'data' folder yet.")
+            st.warning("⚠️ No existing data found in the backend database yet.")
     except requests.exceptions.ConnectionError:
         st.error("❌ Cannot connect to FastAPI backend. Make sure your Uvicorn server is running (api.py).")
 
@@ -58,7 +58,7 @@ with tab_data:
                 assists = st.number_input("Assists", min_value=0, step=1)
 
             minutes = st.number_input("Minutes Played", min_value=0, step=1)
-            submit_manual = st.form_submit_button("Append to Local CSV")
+            submit_manual = st.form_submit_button("Append to Database")
 
             if submit_manual:
                 if not f_name or not l_name or not team:
@@ -160,7 +160,7 @@ with tab_data:
                 st.info("No database elements to delete.")
 
         with st.expander("📁 Overwrite Current Database with a new CSV"):
-            uploaded_file = st.file_uploader("Upload replacement sports_data.csv", type=["csv"])
+            uploaded_file = st.file_uploader("Upload replacement sports data CSV", type=["csv"])
             if uploaded_file is not None:
                 if st.button("Danger: Overwrite Existing Data", key="upload_csv_btn"):
                     with st.spinner("Replacing file on backend..."):
@@ -176,7 +176,7 @@ with tab_data:
                             st.error("Backend unreachable.")
 
 with tab_stats:
-    st.header("Player & Team Advanced Metrics")
+    st.header("📊 Individual Player Advanced Metrics")
     search_player = st.text_input("Enter Player Last Name to fetch metrics:", key="search_single")
 
     if search_player:
@@ -185,10 +185,48 @@ with tab_stats:
                 response = requests.get(f"{BACKEND_URL}/player/{search_player}/stats")
                 if response.status_code == 200:
                     data = response.json()
+
+                    # Core KPI Metrics
                     col1, col2, col3 = st.columns(3)
                     col1.metric(label="Goal Conversion per 90 Min", value=data.get("goals_per_90", "N/A"))
                     col2.metric(label="Total Goal Involvements", value=data.get("goal_involvements", "N/A"))
                     col3.metric(label="League Efficiency Rank", value=f"#{data.get('rank', 'N/A')}")
+
+                    st.write("---")
+
+                    # Advanced Visualizations Split
+                    stat_plot_col1, stat_plot_col2 = st.columns(2)
+
+                    with stat_plot_col1:
+                        # Individual Contribution Profile
+                        mix_df = pd.DataFrame({
+                            "Metric": ["Goals", "Assists"],
+                            "Value": [data.get("goals", 0), data.get("assists", 0)]
+                        })
+                        fig_mix = px.pie(mix_df, names="Metric", values="Value", hole=0.4,
+                                         title=f"⚽ Attacking Contribution Profile: {data.get('first_name')} {data.get('last_name')}",
+                                         color_discrete_sequence=["#FF4B4B", "#0068C9"])
+                        st.plotly_chart(fig_mix, use_container_width=True)
+
+                    with stat_plot_col2:
+                        # Baseline Comparison Matrix against complete Roster
+                        if not df_existing.empty:
+                            avg_goals = round(df_existing["goals"].mean(), 2)
+                            avg_assists = round(df_existing["assists"].mean(), 2)
+                            avg_matches = round(df_existing["matches_played"].mean(), 2)
+
+                            bench_df = pd.DataFrame({
+                                "Metric": ["Matches", "Goals", "Assists"],
+                                "This Player": [data.get("matches_played", 0), data.get("goals", 0),
+                                                data.get("assists", 0)],
+                                "League Avg": [avg_goals, avg_assists, avg_matches]
+                            }).melt(id_vars="Metric", var_name="Scope", value_name="Total")
+
+                            fig_bench = px.bar(bench_df, x="Metric", y="Total", color="Scope", barmode="group",
+                                               title="📈 Output Velocity vs. Database Baselines",
+                                               color_discrete_sequence=["#29B5E8", "#FFABAB"])
+                            st.plotly_chart(fig_bench, use_container_width=True)
+
                     st.subheader("Full Metric Breakdown")
                     st.json(data)
                 else:
@@ -197,7 +235,7 @@ with tab_stats:
                 st.error("Backend unreachable.")
 
 with tab_compare:
-    st.header("Player vs Player Comparison")
+    st.header("⚔️ Player vs Player Comparison")
     cp1, cp2 = st.columns(2)
     with cp1:
         p1_name = st.text_input("First Player (Last Name):", key="compare_p1")
@@ -211,9 +249,47 @@ with tab_compare:
                 if response.status_code == 200:
                     comp_data = response.json()
                     df = pd.DataFrame(comp_data)
+
+                    # Chart 1: Grouped Clustered Performance Bar
+                    st.subheader("📊 Performance Volumetric Breakdown")
                     fig = px.bar(df, x="metrics", y=[p1_name, p2_name], barmode="group",
-                                 title=f"Head-to-Head: {p1_name} vs {p2_name}")
+                                 title=f"Head-to-Head: {p1_name} vs {p2_name}",
+                                 color_discrete_sequence=["#7A1FA2", "#0097A7"])
                     st.plotly_chart(fig, use_container_width=True)
+
+                    st.write("---")
+                    comp_graph_col1, comp_graph_col2 = st.columns(2)
+
+                    with comp_graph_col1:
+                        # Chart 2: Polar Radar Chart Structure for Attribute Footprints
+                        radar_filter = df[df["metrics"] != "Goals per 90"]
+                        df_radar = radar_filter.melt(id_vars="metrics", var_name="Player", value_name="Volume")
+
+                        fig_radar = px.line_polar(df_radar, r="Volume", theta="metrics", color="Player",
+                                                  line_close=True,
+                                                  title="🕸️ Stat Distribution Coverage Area",
+                                                  color_discrete_sequence=["#7A1FA2", "#0097A7"])
+                        # FIXED: Corrected from "adjacent" to "toself"
+                        fig_radar.update_traces(fill="toself")
+                        st.plotly_chart(fig_radar, use_container_width=True)
+
+                    with comp_graph_col2:
+                        # Chart 3: Absolute Dominance Percentage Split
+                        p1_g = df[df["metrics"] == "Goals"][p1_name].values[0]
+                        p2_g = df[df["metrics"] == "Goals"][p2_name].values[0]
+
+                        if (p1_g + p2_g) > 0:
+                            share_df = pd.DataFrame({
+                                "Player": [p1_name, p2_name],
+                                "Total Goals": [p1_g, p2_g]
+                            })
+                            fig_share = px.pie(share_df, names="Player", values="Total Goals", hole=0.5,
+                                               title="⚽ Total Combined Goal Share Comparison",
+                                               color_discrete_sequence=["#7A1FA2", "#0097A7"])
+                            st.plotly_chart(fig_share, use_container_width=True)
+                        else:
+                            st.info(
+                                "Both target players currently maintain 0 goals, skipping share distribution mapping.")
                 else:
                     st.error("Backend failed to process the comparison payload.")
             except requests.exceptions.ConnectionError:
@@ -241,50 +317,46 @@ with tab_predict:
 
 with tab_raw_analytics:
     st.header("📊 Aggregated Roster Analytics")
-    st.caption("No manual search criteria required. Real-time distributions derived from your active database records.")
+    st.caption("Real-time automated visualizations mapping entire global dataset matrices.")
 
     if not df_existing.empty:
         df_existing["full_name"] = df_existing["first_name"] + " " + df_existing["last_name"]
 
-        c1, c2 = st.columns(2)
-
-        with c1:
-            st.subheader("⚽ Goal Share Contribution")
-            fig_pie = px.pie(
-                df_existing,
-                names="full_name",
-                values="goals",
-                title="Proportional Goal Contributions Across Whole Squad",
-                hole=0.3
-            )
+        row1_col1, row1_col2 = st.columns(2)
+        with row1_col1:
+            fig_pie = px.pie(df_existing, names="full_name", values="goals", title="⚽ Squad Goal Share Distribution",
+                             hole=0.3)
             st.plotly_chart(fig_pie, use_container_width=True)
-
-        with c2:
-            st.subheader("🏃 Production Breakdown")
+        with row1_col2:
             df_sorted = df_existing.sort_values(by="goals", ascending=False)
-            fig_bar = px.bar(
-                df_sorted,
-                x="full_name",
-                y=["goals", "assists"],
-                barmode="group",
-                title="Goal vs Assist Performance Rank (Highest Goals First)",
-                labels={"value": "Count", "full_name": "Player Name"}
-            )
+            fig_bar = px.bar(df_sorted, x="full_name", y=["goals", "assists"], barmode="group",
+                             title="🏃 Goal vs Assist Production Rankings")
             st.plotly_chart(fig_bar, use_container_width=True)
 
         st.write("---")
 
-        st.subheader("📈 Efficiency Metrics: Playtime vs. Output Volume")
-        fig_scatter = px.scatter(
-            df_existing,
-            x="minutes_played",
-            y="goals",
-            color="position",
-            size="matches_played",
-            hover_name="full_name",
-            title="Minutes Logged vs Goals Converted (Bubble Size = Matches Played)",
-            labels={"minutes_played": "Total Minutes Logged", "goals": "Goals Scored"}
-        )
-        st.plotly_chart(fig_scatter, use_container_width=True)
+        row2_col1, row2_col2 = st.columns(2)
+        with row2_col1:
+            df_pos = df_existing.groupby("position").agg({"goals": "sum", "assists": "sum"}).reset_index()
+            fig_pos = px.bar(df_pos, x="position", y=["goals", "assists"], barmode="group",
+                             title="🛡️ Attacking Volume Breakdown by Position Group")
+            st.plotly_chart(fig_pos, use_container_width=True)
+        with row2_col2:
+            df_team = df_existing.groupby("team")["goals"].sum().reset_index().sort_values(by="goals", ascending=False)
+            fig_team = px.bar(df_team, x="team", y="goals", title="🏢 Total Club Goals League Standings", color="team")
+            st.plotly_chart(fig_team, use_container_width=True)
+
+        st.write("---")
+
+        row3_col1, row3_col2 = st.columns(2)
+        with row3_col1:
+            fig_scatter = px.scatter(df_existing, x="minutes_played", y="goals", color="position",
+                                     size="matches_played", hover_name="full_name",
+                                     title="⏱️ Work Rate vs Output: Minutes Logged vs Goals Converted")
+            st.plotly_chart(fig_scatter, use_container_width=True)
+        with row3_col2:
+            fig_nat = px.histogram(df_existing, x="nationality",
+                                   title="🌍 Roster Cultural Demographic Composition Matrix", color="position")
+            st.plotly_chart(fig_nat, use_container_width=True)
     else:
-        st.info("Add records or check backend server data inside 'data/sports_data.csv' to visualize database metrics.")
+        st.info("Add records or check backend server data inside database files to visualize metrics.")
