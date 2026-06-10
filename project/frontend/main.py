@@ -324,7 +324,7 @@ with tab_raw_analytics:
 
         row1_col1, row1_col2 = st.columns(2)
         with row1_col1:
-            fig_pie = px.pie(df_existing, names="full_name", values="goals", title="⚽ Squad Goal Share Distribution",
+            fig_pie = px.pie(df_existing, names="full_name", values="goals", title="Squad Goal Share Distribution",
                              hole=0.3)
             st.plotly_chart(fig_pie, use_container_width=True)
         with row1_col2:
