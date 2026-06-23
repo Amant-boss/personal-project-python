@@ -23,6 +23,7 @@ def ensure_db():
         CREATE TABLE IF NOT EXISTS players (
             first_name TEXT,
             last_name TEXT,
+            sport TEXT,
             team TEXT,
             nationality TEXT,
             position TEXT,
@@ -84,12 +85,12 @@ def update_player_record(old_first: str, old_last: str, updated_data: dict):
 
     query = """
         UPDATE players 
-        SET first_name=?, last_name=?, team=?, nationality=?, position=?, 
+        SET first_name=?, last_name=?, sport=?, team=?, nationality=?, position=?, 
             matches_played=?, goals=?, assists=?, minutes_played=?
         WHERE LOWER(first_name) = LOWER(?) AND LOWER(last_name) = LOWER(?)
     """
     cursor.execute(query, (
-        updated_data["first_name"], updated_data["last_name"], updated_data["team"],
+        updated_data["first_name"], updated_data["last_name"], updated_data["sport"], updated_data["team"],
         updated_data["nationality"], updated_data["position"], updated_data["matches_played"],
         updated_data["goals"], updated_data["assists"], updated_data["minutes_played"],
         old_first, old_last

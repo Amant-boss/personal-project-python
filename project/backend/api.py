@@ -52,9 +52,14 @@ def get_player_stats(last_name: str):
         raise HTTPException(status_code=404, detail="Player not found")
 
     player_row = df_match.iloc[0]
-    df["temp_involvements"] = df["goals"] + df["assists"]
-    df["rank_val"] = df["temp_involvements"].rank(ascending=False, method="min")
-    player_rank = int(df[df["last_name"].str.lower() == last_name.lower()].iloc[0]["rank_val"])
+    player_sport = player_row["sport"]
+
+    # Filter by sport so ranking belongs only to that sport branch
+    df_sport = df[df["sport"].str.lower() == player_sport.lower()].copy()
+    df_sport["temp_involvements"] = df_sport["goals"] + df_sport["assists"]
+    df_sport["rank_val"] = df_sport["temp_involvements"].rank(ascending=False, method="min")
+
+    player_rank = int(df_sport[df_sport["last_name"].str.lower() == last_name.lower()].iloc[0]["rank_val"])
 
     mins = player_row["minutes_played"]
     goals = player_row["goals"]
@@ -64,6 +69,7 @@ def get_player_stats(last_name: str):
     return {
         "first_name": player_row["first_name"],
         "last_name": player_row["last_name"],
+        "sport": player_sport,
         "team": player_row["team"],
         "position": player_row["position"],
         "nationality": player_row["nationality"],

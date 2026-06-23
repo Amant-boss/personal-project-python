@@ -3,6 +3,7 @@ from pydantic import BaseModel
 class PlayerCreateSchema(BaseModel):
     first_name: str
     last_name: str
+    sport: str
     team: str
     nationality: str
     position: str
